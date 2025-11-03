@@ -9,8 +9,8 @@
 #include <set>
 
 #include "base/memory/raw_ptr.h"
+#include "gin/wrappable.h"
 #include "shell/browser/net/web_request_api_interface.h"
-#include "shell/common/gin_helper/wrappable.h"
 
 class URLPattern;
 
@@ -33,34 +33,40 @@ class Handle;
 
 namespace electron::api {
 
-class WebRequest final : public gin_helper::DeprecatedWrappable<WebRequest>,
+class WebRequest final : public gin::Wrappable<WebRequest>,
                          public WebRequestAPI {
  public:
   // Return the WebRequest object attached to |browser_context|, create if there
   // is no one.
   // Note that the lifetime of WebRequest object is managed by Session, instead
   // of the caller.
-  static gin_helper::Handle<WebRequest> FromOrCreate(
-      v8::Isolate* isolate,
-      content::BrowserContext* browser_context);
+  static WebRequest* FromOrCreate(v8::Isolate* isolate,
+                                  content::BrowserContext* browser_context);
+
+  // Make public for cppgc::MakeGarbageCollected.
+  explicit WebRequest(content::BrowserContext* browser_context);
+  ~WebRequest() override;
+
+  // disable copy
+  WebRequest(const WebRequest&) = delete;
+  WebRequest& operator=(const WebRequest&) = delete;
 
   // Return a new WebRequest object, this should only be called by Session.
-  static gin_helper::Handle<WebRequest> Create(
-      v8::Isolate* isolate,
-      content::BrowserContext* browser_context);
+  static WebRequest* Create(v8::Isolate* isolate,
+                            content::BrowserContext* browser_context);
 
   // Find the WebRequest object attached to |browser_context|.
-  static gin_helper::Handle<WebRequest> From(
-      v8::Isolate* isolate,
-      content::BrowserContext* browser_context);
+  static WebRequest* From(v8::Isolate* isolate,
+                          content::BrowserContext* browser_context);
 
   static const char* GetClassName() { return "WebRequest"; }
 
   // gin_helper::Wrappable:
-  static gin::DeprecatedWrapperInfo kWrapperInfo;
+  static const gin::WrapperInfo kWrapperInfo;
+  const gin::WrapperInfo* wrapper_info() const override;
+  const char* GetHumanReadableName() const override;
   gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
       v8::Isolate* isolate) override;
-  const char* GetTypeName() override;
 
   // WebRequestAPI:
   bool HasListener() const override;
@@ -96,9 +102,6 @@ class WebRequest final : public gin_helper::DeprecatedWrappable<WebRequest>,
   void OnRequestWillBeDestroyed(extensions::WebRequestInfo* info) override;
 
  private:
-  WebRequest(v8::Isolate* isolate, content::BrowserContext* browser_context);
-  ~WebRequest() override;
-
   // Contains info about requests that are blocked waiting for a response from
   // the user.
   struct BlockedRequest;

@@ -76,7 +76,7 @@ const char kUserDataKey[] = "WebRequest";
 
 // BrowserContext <=> WebRequest relationship.
 struct UserData : public base::SupportsUserData::Data {
-  explicit UserData(WebRequest* data) : data(data) {}
+  explicit UserData(WebRequest* data) : data{data} {}
   raw_ptr<WebRequest> data;
 };
 
@@ -209,7 +209,8 @@ CalculateOnBeforeSendHeadersDelta(const net::HttpRequestHeaders* old_headers,
 
 }  // namespace
 
-gin::DeprecatedWrapperInfo WebRequest::kWrapperInfo = {gin::kEmbedderNativeGin};
+const gin::WrapperInfo WebRequest::kWrapperInfo = {{gin::kEmbedderNativeGin},
+                                                   gin::kElectronWebRequest};
 
 WebRequest::RequestFilter::RequestFilter(
     std::set<URLPattern> include_url_patterns,
@@ -312,9 +313,8 @@ WebRequest::ResponseListenerInfo::ResponseListenerInfo(
 WebRequest::ResponseListenerInfo::ResponseListenerInfo() = default;
 WebRequest::ResponseListenerInfo::~ResponseListenerInfo() = default;
 
-WebRequest::WebRequest(v8::Isolate* isolate,
-                       content::BrowserContext* browser_context)
-    : browser_context_(browser_context) {
+WebRequest::WebRequest(content::BrowserContext* browser_context)
+    : browser_context_{browser_context} {
   browser_context_->SetUserData(kUserDataKey, std::make_unique<UserData>(this));
 }
 
@@ -324,8 +324,7 @@ WebRequest::~WebRequest() {
 
 gin::ObjectTemplateBuilder WebRequest::GetObjectTemplateBuilder(
     v8::Isolate* isolate) {
-  return gin_helper::DeprecatedWrappable<WebRequest>::GetObjectTemplateBuilder(
-             isolate)
+  return gin::Wrappable<WebRequest>::GetObjectTemplateBuilder(isolate)
       .SetMethod(
           "onBeforeRequest",
           &WebRequest::SetResponseListener<ResponseEvent::kOnBeforeRequest>)
@@ -348,8 +347,12 @@ gin::ObjectTemplateBuilder WebRequest::GetObjectTemplateBuilder(
                  &WebRequest::SetSimpleListener<SimpleEvent::kOnCompleted>);
 }
 
-const char* WebRequest::GetTypeName() {
-  return GetClassName();
+const gin::WrapperInfo* WebRequest::wrapper_info() const {
+  return &kWrapperInfo;
+}
+
+const char* WebRequest::GetHumanReadableName() const {
+  return "Electron / WebRequest";
 }
 
 bool WebRequest::HasListener() const {
@@ -733,43 +736,38 @@ void WebRequest::HandleSimpleEvent(SimpleEvent event,
 }
 
 // static
-gin_helper::Handle<WebRequest> WebRequest::FromOrCreate(
-    v8::Isolate* isolate,
-    content::BrowserContext* browser_context) {
-  gin_helper::Handle<WebRequest> handle = From(isolate, browser_context);
-  if (handle.IsEmpty()) {
+WebRequest* WebRequest::FromOrCreate(v8::Isolate* isolate,
+                                     content::BrowserContext* browser_context) {
+  WebRequest* web_request = From(isolate, browser_context);
+  if (web_request == nullptr) {
     // Make sure the |Session| object has the |webRequest| property created.
-    v8::Local<v8::Value> web_request =
-        Session::CreateFrom(
-            isolate, static_cast<ElectronBrowserContext*>(browser_context))
-            ->WebRequest(isolate);
-    gin::ConvertFromV8(isolate, web_request, &handle);
+    Session* const session = Session::CreateFrom(
+        isolate, static_cast<ElectronBrowserContext*>(browser_context));
+    web_request = session->WebRequest(isolate);
   }
-  DCHECK(!handle.IsEmpty());
-  return handle;
+  DCHECK_NE(web_request, nullptr);
+  return web_request;
 }
 
 // static
-gin_helper::Handle<WebRequest> WebRequest::Create(
-    v8::Isolate* isolate,
-    content::BrowserContext* browser_context) {
-  DCHECK(From(isolate, browser_context).IsEmpty())
+WebRequest* WebRequest::Create(v8::Isolate* isolate,
+                               content::BrowserContext* browser_context) {
+  DCHECK_EQ(From(isolate, browser_context), nullptr)
       << "WebRequest already created";
-  return gin_helper::CreateHandle(isolate,
-                                  new WebRequest(isolate, browser_context));
+  return cppgc::MakeGarbageCollected<WebRequest>(
+      isolate->GetCppHeap()->GetAllocationHandle(), browser_context);
 }
 
 // static
-gin_helper::Handle<WebRequest> WebRequest::From(
-    v8::Isolate* isolate,
-    content::BrowserContext* browser_context) {
+WebRequest* WebRequest::From(v8::Isolate* isolate,
+                             content::BrowserContext* browser_context) {
   if (!browser_context)
     return {};
-  auto* user_data =
+  auto* const user_data =
       static_cast<UserData*>(browser_context->GetUserData(kUserDataKey));
   if (!user_data)
     return {};
-  return gin_helper::CreateHandle(isolate, user_data->data.get());
+  return user_data->data;
 }
 
 }  // namespace electron::api

@@ -1358,12 +1358,10 @@ v8::Local<v8::Value> Session::ServiceWorkerContext(v8::Isolate* isolate) {
   return service_worker_context_.Get(isolate);
 }
 
-v8::Local<v8::Value> Session::WebRequest(v8::Isolate* isolate) {
-  if (web_request_.IsEmptyThreadSafe()) {
-    auto handle = WebRequest::Create(isolate, browser_context());
-    web_request_.Reset(isolate, handle.ToV8());
-  }
-  return web_request_.Get(isolate);
+WebRequest* Session::WebRequest(v8::Isolate* isolate) {
+  if (!web_request_)
+    web_request_ = WebRequest::Create(isolate, browser_context());
+  return web_request_;
 }
 
 v8::Local<v8::Value> Session::NetLog(v8::Isolate* isolate) {
