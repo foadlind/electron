@@ -8,7 +8,7 @@ electron objects that extend gin::Wrappable and gets
 allocated on the cpp heap
 
 diff --git a/gin/public/wrappable_pointer_tags.h b/gin/public/wrappable_pointer_tags.h
-index 82fc9e311ec84b19a15818a501b3a29329eff004..c2d699c39e21b842b9721ddb98dc802fb7b94780 100644
+index 82fc9e311ec84b19a15818a501b3a29329eff004..8544052b91e3494f73dc6f9c07dd6a0df723cccb 100644
 --- a/gin/public/wrappable_pointer_tags.h
 +++ b/gin/public/wrappable_pointer_tags.h
 @@ -74,7 +74,14 @@ enum WrappablePointerTag : uint16_t {
@@ -22,7 +22,7 @@ index 82fc9e311ec84b19a15818a501b3a29329eff004..c2d699c39e21b842b9721ddb98dc802f
 +  kElectronMenu,                        // electron::api::Menu
 +  kElectronNetLog,                      // electron::api::NetLog
 +  kElectronSession,                     // electron::api::Session
-+  kElectronWebRequest,
++  kElectronWebRequest,                  // electron::api::WebRequest
 +  kLastPointerTag = kElectronWebRequest,
  };
  
