@@ -394,6 +394,7 @@ void ProxyingWebSocket::OnAuthRequiredComplete(
 void ProxyingWebSocket::OnHeadersReceivedCompleteForAuth(
     const net::AuthChallengeInfo& auth_info,
     int rv) {
+  fprintf(stderr, "OnHeadersReceivedCompleteForAuth called\n");
   if (rv != net::OK) {
     OnError(rv);
     return;

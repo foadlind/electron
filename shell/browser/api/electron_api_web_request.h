@@ -8,6 +8,8 @@
 #include <map>
 #include <set>
 
+#include "base/memory/weak_ptr.h"
+
 #include "base/memory/raw_ptr.h"
 #include "shell/browser/net/web_request_api_interface.h"
 #include "shell/common/gin_helper/wrappable.h"
@@ -120,7 +122,6 @@ class WebRequest final : public gin_helper::DeprecatedWrappable<WebRequest>,
     kOnBeforeRequest,
     kOnBeforeSendHeaders,
     kOnHeadersReceived,
-    kOnAuthRequired
   };
 
   using SimpleListener = base::RepeatingCallback<void(v8::Local<v8::Value>)>;
@@ -157,15 +158,17 @@ class WebRequest final : public gin_helper::DeprecatedWrappable<WebRequest>,
       const net::HttpResponseHeaders* original_response_headers,
       scoped_refptr<net::HttpResponseHeaders>* override_response_headers);
 
-  void OnAuthRequiredListenerResult(uint64_t id,
-                                    net::AuthCredentials* credentials,
-                                    v8::Local<v8::Value> response);
   void OnBeforeRequestListenerResult(uint64_t id,
                                      v8::Local<v8::Value> response);
   void OnBeforeSendHeadersListenerResult(uint64_t id,
                                          v8::Local<v8::Value> response);
   void OnHeadersReceivedListenerResult(uint64_t id,
                                        v8::Local<v8::Value> response);
+  // Callback invoked by LoginHandler when auth credentials are supplied via
+  // the unified 'login' event. Bridges back into WebRequest's AuthCallback.
+  void OnLoginAuthResult(uint64_t id,
+                         net::AuthCredentials* credentials,
+                         const std::optional<net::AuthCredentials>& maybe_creds);
 
   class RequestFilter {
    public:
@@ -219,6 +222,8 @@ class WebRequest final : public gin_helper::DeprecatedWrappable<WebRequest>,
 
   // Weak-ref, it manages us.
   raw_ptr<content::BrowserContext> browser_context_;
+
+  base::WeakPtrFactory<WebRequest> weak_factory_{this};
 };
 
 }  // namespace electron::api
