@@ -30,9 +30,10 @@
 #include "services/network/public/mojom/url_loader_factory.mojom.h"
 #include "services/network/public/mojom/url_response_head.mojom-forward.h"
 #include "services/network/url_loader_factory.h"
+#include "shell/browser/api/electron_api_web_request.h"
 #include "shell/browser/net/electron_url_loader_factory.h"
-#include "shell/browser/net/web_request_api_interface.h"
 #include "url/gurl.h"
+#include "v8/include/cppgc/persistent.h"
 
 namespace mojo {
 template <typename T>
@@ -197,7 +198,7 @@ class ProxyingURLLoaderFactory
   };
 
   ProxyingURLLoaderFactory(
-      WebRequestAPI* web_request_api,
+      api::WebRequest* web_request_api,
       const HandlersMap& intercepted_handlers,
       int render_process_id,
       int frame_routing_id,
@@ -252,7 +253,7 @@ class ProxyingURLLoaderFactory
   bool ShouldIgnoreConnectionsLimit(const network::ResourceRequest& request);
 
   // Passed from api::WebRequest.
-  raw_ptr<WebRequestAPI> web_request_api_;
+  cppgc::Persistent<api::WebRequest> web_request_api_;
 
   // This is passed from api::Protocol.
   //

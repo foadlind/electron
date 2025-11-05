@@ -732,7 +732,7 @@ void ProxyingURLLoaderFactory::InProgressRequest::OnRequestError(
 }
 
 ProxyingURLLoaderFactory::ProxyingURLLoaderFactory(
-    WebRequestAPI* web_request_api,
+    api::WebRequest* web_request_api,
     const HandlersMap& intercepted_handlers,
     int render_process_id,
     int frame_routing_id,
@@ -744,7 +744,7 @@ ProxyingURLLoaderFactory::ProxyingURLLoaderFactory(
     mojo::PendingReceiver<network::mojom::TrustedURLLoaderHeaderClient>
         header_client_receiver,
     content::ContentBrowserClient::URLLoaderFactoryType loader_factory_type)
-    : web_request_api_(web_request_api),
+    : web_request_api_{web_request_api},
       intercepted_handlers_(intercepted_handlers),
       render_process_id_(render_process_id),
       frame_routing_id_(frame_routing_id),
